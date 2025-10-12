@@ -234,19 +234,13 @@ local outCombat = function()
     end
 end
 
-
-
-local spellIds_Loc = {}
-
-local blacklist = {}
-
 _A.CR:Add("Paladin", {
-    name = "Nakama - Leveling (PVE)",
+    name = "GentlePally - Protection (PVE)",
     ic = inCombat,
     ooc = outCombat,
     use_lua_engine = true,
     gui = gui,
-    gui_st = { title = "CR Settings", color = "87CEFA", width = "315", height = "370" },
+    gui_st = { title = "GentlePally - Rotation Settings", color = "F48CBA", width = "315", height = "370" },
     wow_ver = "3.3.5",
     apep_ver = "1.1",
     -- ids = spellIds_Loc,
