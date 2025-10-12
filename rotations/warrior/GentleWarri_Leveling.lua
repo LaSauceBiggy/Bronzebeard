@@ -1,5 +1,7 @@
 local nakamaMedia, _A, nakama = ...
-local player, target, roster, enemies
+local player, target, enemies, count, facing
+local rend = _A.GetSpellInfo(1100772)
+local heroicStrike = _A.GetSpellInfo(1100078)
 
 -- to do: gui settings and modifiers
 local gui = {}
@@ -18,7 +20,51 @@ local function inCombat()
         return true
     end
 
-    
+    target = _A.Object("target")
+
+    -- cancel if casting
+    if player:IscastingAnySpell()
+        -- cancel if stunned or silenced
+        -- racial implementation for dispel soon
+        or player:State("stun || silence")
+        -- cancel if mounted
+        or player:Mounted() then
+        -- reset loop
+        return true
+    end
+
+    if player:SpellReady(rend) then
+        enemies = _A.OM:Get("EnemyCombat")
+        count = 0
+
+        for _, enemy in pairs(enemies) do
+            facing = _A.UnitIsFacing(player.guid, enemy.guid, 130)
+
+            if enemy:Debuff(rend) then
+                count = count + 1
+            end
+
+            if count < 3 then
+                if not enemy:Debuff(rend)
+                    and enemy:Health() > 15
+                    and enemy:SpellRange(rend) then
+                    return enemy:Cast(rend)
+                end
+            end
+        end
+    end
+
+    -- check if we have a target thats not dead or a friend
+    if target and not (target:Dead() or target:Friend()) then
+        facing = _A.UnitIsFacing(player.guid, target.guid, 130)
+        if player:SpellReady(heroicStrike)
+            and not player:CurrentSpell(heroicStrike) then
+            if target:SpellRange(heroicStrike)
+                and facing then
+                return target:Cast(heroicStrike, true)
+            end
+        end
+    end
 end
 
 local function outCombat()
