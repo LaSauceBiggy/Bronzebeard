@@ -1,5 +1,5 @@
 local nakamaMedia, _A, nakama = ...
-local player, target, roster, enemies
+local player, target, roster, inInstance, enemies
 
 -- fetch spell names and store them in locals for performance optimization
 -- offensive
@@ -93,7 +93,7 @@ local inCombat = function()
         return player:Cast(purify)
     end
 
-        -- improved Hammer of Justice
+    -- improved Hammer of Justice
     -- now takes all possible targets into consideration
     if player:SpellReady(hammerOfJustice) then
         enemies = _A.OM:Get("EnemyCombat")
@@ -120,7 +120,6 @@ local inCombat = function()
             end
         end
     end
-
 
     -- check if we have a target thats not dead or a friend
     if target and not (target:Dead() or target:Friend()) then
