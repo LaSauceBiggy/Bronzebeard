@@ -247,7 +247,7 @@ _A.CR:Add("Paladin", {
     ooc = outCombat,
     use_lua_engine = true,
     gui = gui,
-    gui_st = { title = "CR Settings", color = "F48CBA", width = "315", height = "370" },
+    gui_st = { title = "GentlePally - Rotation Settings", color = "F48CBA", width = "315", height = "370" },
     wow_ver = "3.3.5",
     apep_ver = "1.1",
     -- ids = spellIds_Loc,

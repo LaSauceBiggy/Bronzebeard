@@ -25,7 +25,7 @@ _A.CR:Add("Warrior", {
     ooc = outCombat,
     use_lua_engine = true,
     gui = gui,
-    gui_st = { title = "CR Settings", color = "C69B6D", width = "315", height = "370" },
+    gui_st = { title = "GentleWarri - Rotation Settings", color = "C69B6D", width = "315", height = "370" },
     wow_ver = "3.3.5",
     apep_ver = "1.1",
     -- ids = spellIds_Loc,
