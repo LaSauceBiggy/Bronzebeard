@@ -1,6 +1,8 @@
 local nakamaMedia, _A, nakama = ...
 local player, target, targetGUID
 local playerGUID = _A.Cache.Utils.playerGUID or _A.UnitGUID("player")
+local apepDir = _A.GetApepDirectory()
+_A.require(apepDir .. "\\nakama\\GentleRotations\\SpellBook\\GentleRogue_SpellBook.lua")
 
 -- to do: gui settings and modifiers
 local gui = {}
@@ -35,7 +37,6 @@ local function inCombat()
     -- check if we have a target thats not dead or a friend
     if target then
         targetGUID = target.guid
-
     end
 end
 
@@ -45,16 +46,15 @@ local function outCombat()
     if not player then
         return true
     end
-
 end
 
-_A.CR:Add("Warrior", {
-    name = "GentleWarri - Leveling",
+_A.CR:Add("Rogue", {
+    name = "GentleRogue - Leveling",
     ic = inCombat,
     ooc = outCombat,
     use_lua_engine = true,
     gui = gui,
-    gui_st = { title = "GentleWarri - Rotation Settings", color = "C69B6D", width = "315", height = "370" },
+    gui_st = { title = "GentleRogue - Rotation Settings", color = "FFF468", width = "315", height = "370" },
     wow_ver = "3.3.5",
     apep_ver = "1.1",
     -- ids = spellIds_Loc,
