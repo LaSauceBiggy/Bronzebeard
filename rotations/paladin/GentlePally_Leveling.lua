@@ -15,7 +15,7 @@ local blessingOfMight = _A.GetSpellInfo(1119740)
 -- seals
 local sealOfRighteousness = _A.GetSpellInfo(1121084)
 -- utility
-local hammerOfJustice = _A.GetSpellInfo(110853)
+local hammerOfJustice = _A.GetSpellInfo(1100853)
 local purify = _A.GetSpellInfo(1101152)
 -- generic
 local drink = _A.GetSpellInfo(430)
