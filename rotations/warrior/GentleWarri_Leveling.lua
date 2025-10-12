@@ -1,7 +1,5 @@
 local nakamaMedia, _A, nakama = ...
 local player, playerGUID, target, targetGUID
-local rend = _A.GetSpellInfo(1100772)
-local heroicStrike = _A.GetSpellInfo(1100078)
 
 -- to do: gui settings and modifiers
 local gui = {}
