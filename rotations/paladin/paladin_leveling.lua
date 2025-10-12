@@ -1,27 +1,27 @@
 local nakamaMedia, _A, nakama = ...
 local player, target, roster, inRange, facing, inLOS
+
+-- fetch spell names and store them in locals for performance optimization
+-- offensive
 local crusaderStrike = _A.GetSpellInfo(1135395)
 local judgmentOfLight = _A.GetSpellInfo(1120271)
+-- aura
 local devotionAura = _A.GetSpellInfo(1100465)
+-- heal / bubble
 local holyLight = _A.GetSpellInfo(1100635)
+local divineProtection = _A.GetSpellInfo(1100498)
+-- buff
 local blessingOfMight = _A.GetSpellInfo(1119740)
+-- seals
 local sealOfRighteousness = _A.GetSpellInfo(1121084)
+-- utility
+local hammerOfJustice = _A.GetSpellInfo(110853)
+local purify = _A.GetSpellInfo(1101152)
+-- generic
 local drink = _A.GetSpellInfo(430)
 local eat = _A.GetSpellInfo(433)
 
-local function playerCantCast()
-    return player:State("stun || silence")
-end
-local function invalidTarget()
-    return not target or target and (target:Friend() or target:Dead())
-end
-local function invalidSpell(spell)
-    return not player:SpellReady(spell) or player:IscastingAnySpell()
-end
-local function isValidMeleeTargetCast(spell)
-    local fcing = _A.UnitIsFacing(player.guid, target.guid, 130)
-end
-
+-- to do: gui settings and modifiers
 local gui = {}
 
 local exeOnLoad = function()
@@ -35,7 +35,7 @@ local inCombat = function()
     player = _A.Object("player")
 
     if not player then
-        return
+        return true
     end
 
     target = _A.Object("target")
@@ -48,7 +48,7 @@ local inCombat = function()
         -- cancel if mounted
         or player:Mounted() then
         -- reset loop
-        return
+        return true
     end
 
     -- check if we can cast Devotion Aura
@@ -59,14 +59,12 @@ local inCombat = function()
         return player:Cast(devotionAura)
     end
 
-        -- check if we can cast Divine Protection
-    if player:SpellReady(holyLight)
-        -- cancel if moving
-        and not player:Moving()
-        -- cancel if hp % > 40
-        and player:Health() < 40 then
+    -- check if we can cast Divine Protection
+    if player:SpellReady(divineProtection)
+        -- cancel if hp % > 20
+        and player:Health() < 21 then
         -- cast Holy Light on player
-        return player:Cast(holyLight)
+        return player:Cast(divineProtection)
     end
 
     -- check if we can cast Holy Light
@@ -87,8 +85,38 @@ local inCombat = function()
         return player:Cast(sealOfRighteousness)
     end
 
+    -- check if we can and need to cast purify
+    if player:DebuffType("Poison || Disease")
+        and player:SpellReady(purify)
+        and player:Mana() > 75
+        and player:LastcastSeen(purify) > 5 then
+        return player:Cast(purify)
+    end
+
     -- check if we have a target thats not dead or a friend
     if target and not (target:Dead() or target:Friend()) then
+        -- check if we can cast Hammer of Justice
+        if target:IscastingAnySpell()
+            and player:SpellReady(hammerOfJustice) then
+            local _, total, ischanneled = target:CastingDelta()
+
+            if not ischanneled then
+                if target:CastingPercent() >= 60
+                    and total >= 0.275
+                    and target:SpellRange(hammerOfJustice) then
+                    return target:Cast(hammerOfJustice)
+                end
+            end
+
+            if ischanneled then
+                if target:ChannelingPercent() >= 15
+                    and total >= 0.575
+                    and target:SpellRange(hammerOfJustice) then
+                    return target:Cast(hammerOfJustice)
+                end
+            end
+        end
+
         -- check if we can cast Judgement of Light
         if player:SpellReady(judgmentOfLight)
             -- cancel if target not in range
@@ -96,7 +124,7 @@ local inCombat = function()
             -- cancel if target not in los
             and target:Los() then
             -- cast Judgement of Light on target
-            return target:Cast(judgmentOfLight)
+            return target:Cast(judgmentOfLight) and player:timeout(judgmentOfLight, 0.25)
         end
 
         -- check if we can cast Crusader Strike
@@ -106,19 +134,16 @@ local inCombat = function()
             -- cancel if target not in 130° cone in front
             and _A.UnitIsFacing(player.guid, target.guid, 130) then
             -- cast Crusader Strike on target
-            return target:Cast(crusaderStrike)
+            return target:Cast(crusaderStrike) and player:timeout(crusaderStrike, 0.25)
         end
     end
 end
-
-
-
 
 local outCombat = function()
     player = _A.Object("player")
 
     if not player then
-        return
+        return true
     end
 
     -- cancel if casting
@@ -131,7 +156,7 @@ local outCombat = function()
         -- cancel if eating or drinking
         or (player:BuffAny(drink) or player:BuffAny(eat)) then
         -- reset loop
-        return
+        return true
     end
 
     -- check if we can cast Devotion Aura
@@ -142,6 +167,14 @@ local outCombat = function()
         and not player:Buff(devotionAura) then
         -- cast Devotion Aura
         return player:Cast(devotionAura)
+    end
+
+    -- check if we can and need to cast purify
+    if player:DebuffType("Poison || Disease")
+        and player:SpellReady(purify)
+        and player:Mana() > 75
+        and player:LastcastSeen(purify) > 5 then
+        return player:Cast(purify)
     end
 
     -- check if we can cast Holy Light
