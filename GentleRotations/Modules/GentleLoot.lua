@@ -37,6 +37,7 @@ nakama.autoLoot = function()
             if not isBlacklisted then
                 _A.InteractUnit(guid)
                 table.insert(nakama.lootBlackList, guid)
+                _A.ClearTarget()
                 return true
             end
         end
