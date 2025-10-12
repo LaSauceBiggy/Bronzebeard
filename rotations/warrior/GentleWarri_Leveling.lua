@@ -12,11 +12,21 @@ end
 local function exeOnUnload() end
 
 local function inCombat()
+    player = _A.Object("player")
 
+    if not player then
+        return true
+    end
+
+    
 end
 
 local function outCombat()
+    player = _A.Object("player")
 
+    if not player then
+        return true
+    end
 end
 
 _A.CR:Add("Warrior", {
