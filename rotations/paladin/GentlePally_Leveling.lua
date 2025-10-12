@@ -24,14 +24,14 @@ local eat = _A.GetSpellInfo(433)
 -- to do: gui settings and modifiers
 local gui = {}
 
-local exeOnLoad = function()
+local function exeOnLoad()
     _A.UIErrorsFrame:Hide()
     _A.Sound_EnableErrorSpeech = 0
 end
 
-local exeOnUnload = function() end
+local function exeOnUnload() end
 
-local inCombat = function()
+local function inCombat()
     player = _A.Object("player")
 
     if not player then
@@ -146,7 +146,7 @@ local inCombat = function()
     end
 end
 
-local outCombat = function()
+local function outCombat()
     player = _A.Object("player")
 
     if not player then
@@ -242,12 +242,12 @@ local spellIds_Loc = {}
 local blacklist = {}
 
 _A.CR:Add("Paladin", {
-    name = "Nakama - Leveling (PVE)",
+    name = "GentlePally - Leveling",
     ic = inCombat,
     ooc = outCombat,
     use_lua_engine = true,
     gui = gui,
-    gui_st = { title = "CR Settings", color = "87CEFA", width = "315", height = "370" },
+    gui_st = { title = "CR Settings", color = "F48CBA", width = "315", height = "370" },
     wow_ver = "3.3.5",
     apep_ver = "1.1",
     -- ids = spellIds_Loc,
