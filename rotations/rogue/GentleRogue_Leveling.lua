@@ -22,44 +22,10 @@ local gui = {}
 local function exeOnLoad()
     _A.UIErrorsFrame:Hide()
     _A.Sound_EnableErrorSpeech = 0
-
-    _A.Listener:Add(
-        "GentleTracker",
-        { "LOOT_OPENED", "UI_ERROR_MESSAGE", "COMBAT_LOG_EVENT_UNFILTERED", "PLAYER_REGEN_DISABLED" },
-        function(event, ...)
-            if event == "LOOT_OPENED" then
-                if lastppTarget then
-                    table.insert(ppBlackList, lastppTarget)
-                end
-                lastppTarget = nil
-            elseif event == "UI_ERROR_MESSAGE" then
-                local errorType, message = ...
-                if errorType == ERR_ALREADY_PICKPOCKETED or errorType == SPELL_FAILED_TARGET_NO_POCKETS then
-                    table.insert(ppBlackList, _A.Unit("target").guid)
-                end
-            elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
-                local _, subevent, sourceGUID, _, _, destGUID, _, _, spellID, arg1, arg2, arg3 = ...
-                if
-                    subevent == "SPELL_CAST_FAILED"
-                    and sourceGUID == playerGUID
-                    and spellID == 921
-                    and arg1 == "No pockets to pick"
-                then
-                    table.insert(ppBlackList, destGUID)
-                end
-                if subevent == "SPELL_CAST_SUCCESS" and sourceGUID == playerGUID and spellID == 921 then
-                    lastppTarget = destGUID
-                end
-            elseif event == "PLAYER_REGEN_DISABLED" then
-                ppBlackList = {}
-                collectgarbage()
-            end
-        end
-    )
 end
 
 local function exeOnUnload()
-    _A.Listener:Delete("GentleTracker")
+
 end
 
 local function inCombat()
