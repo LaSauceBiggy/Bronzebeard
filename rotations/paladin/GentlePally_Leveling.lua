@@ -1,5 +1,5 @@
 local nakamaMedia, _A, nakama = ...
-local player, target, roster, inRange, facing, inLOS
+local player, target, roster, enemies
 
 -- fetch spell names and store them in locals for performance optimization
 -- offensive
@@ -93,30 +93,37 @@ local inCombat = function()
         return player:Cast(purify)
     end
 
-    -- check if we have a target thats not dead or a friend
-    if target and not (target:Dead() or target:Friend()) then
-        -- check if we can cast Hammer of Justice
-        if target:IscastingAnySpell()
-            and player:SpellReady(hammerOfJustice) then
-            local _, total, ischanneled = target:CastingDelta()
+        -- improved Hammer of Justice
+    -- now takes all possible targets into consideration
+    if player:SpellReady(hammerOfJustice) then
+        enemies = _A.OM:Get("EnemyCombat")
 
-            if not ischanneled then
-                if target:CastingPercent() >= 60
-                    and total >= 0.275
-                    and target:SpellRange(hammerOfJustice) then
-                    return target:Cast(hammerOfJustice)
+        for _, enemy in pairs(enemies) do
+            if enemy:IscastingAnySpell() then
+                local _, total, ischanneled = enemy:CastingDelta()
+
+                if not ischanneled then
+                    if target:CastingPercent() >= 60
+                        and total >= 0.275
+                        and enemy:SpellRange(hammerOfJustice) then
+                        return enemy:Cast(hammerOfJustice)
+                    end
                 end
-            end
 
-            if ischanneled then
-                if target:ChannelingPercent() >= 15
-                    and total >= 0.575
-                    and target:SpellRange(hammerOfJustice) then
-                    return target:Cast(hammerOfJustice)
+                if ischanneled then
+                    if enemy:ChannelingPercent() >= 15
+                        and total >= 0.575
+                        and enemy:SpellRange(hammerOfJustice) then
+                        return enemy:Cast(hammerOfJustice)
+                    end
                 end
             end
         end
+    end
 
+
+    -- check if we have a target thats not dead or a friend
+    if target and not (target:Dead() or target:Friend()) then
         -- check if we can cast Judgement of Light
         if player:SpellReady(judgmentOfLight)
             -- cancel if target not in range
