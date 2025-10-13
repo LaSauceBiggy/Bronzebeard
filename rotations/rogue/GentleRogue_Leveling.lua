@@ -18,10 +18,10 @@ local playerGUID = _A.Cache.Utils.playerGUID or _A.UnitGUID("player")
 
 -- Spell IDs are resolved once for efficiency.
 -- _A.GetSpellInfo() returns the localized spell name (string) for casting.
-local SPELL = {
-    SINISTER_STRIKE = _A.GetSpellInfo(1101752),
-    EVISCERATE      = _A.GetSpellInfo(1102098),
-    THROW           = _A.GetSpellInfo(2764),
+local spellLib = {
+    SinisterStrike = _A.GetSpellInfo(1101752),
+    Eviscerate     = _A.GetSpellInfo(1102098),
+    Throw          = _A.GetSpellInfo(2764),
 }
 
 -- Minimal GUI stub for later use
@@ -81,23 +81,24 @@ local function inCombat()
 
     -- === COMBO BUILDERS ===
     if combo < 5
-        and player:SpellReady(SPELL.SINISTER_STRIKE)
-        and target:SpellRange(SPELL.SINISTER_STRIKE) then
-        return target:Cast(SPELL.SINISTER_STRIKE)
+        and player:SpellReady(spellLib.SinisterStrike)
+        and target:SpellRange(spellLib.SinisterStrike) then
+        return target:Cast(spellLib.SinisterStrike)
     end
 
     -- === FINISHERS ===
     if combo == 5
-        and player:SpellReady(SPELL.EVISCERATE)
-        and target:SpellRange(SPELL.EVISCERATE) then
-        return target:Cast(SPELL.EVISCERATE)
+        and player:SpellReady(spellLib.Eviscerate)
+        and target:SpellRange(spellLib.Eviscerate) then
+        return target:Cast(spellLib.Eviscerate)
     end
 
     -- === FALLBACK ===
     -- Optional: ranged pull if no melee range or combo
-    if player:SpellReady(SPELL.THROW)
-        and not target:SpellRange(SPELL.SINISTER_STRIKE) then
-        return target:Cast(SPELL.THROW)
+    if player:SpellReady(spellLib.Throw)
+        and not target:SpellRange(spellLib.SinisterStrike)
+        and target:SpellRange(spellLib.Throw) then
+        return target:Cast(spellLib.Throw)
     end
 end
 
