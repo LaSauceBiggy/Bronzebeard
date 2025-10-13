@@ -32,7 +32,7 @@ end
 -- Runs O(n) over visible corpses, single interact per frame
 --------------------------------------------------------------------------------
 function gentle.autoLoot()
-    if _A.BagSpace() <= 0 then return false end
+    if _A.BagSpace() < 1 then return false end
 
     local corpses = _A.OM:Get("Dead")
     if not corpses then return false end
