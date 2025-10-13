@@ -1,125 +1,94 @@
 --------------------------------------------------------------------------------
--- GentleRogue - Leveling Rotation
+-- GentleRogue - Leveling
 -- Author: Gentleman
--- Notes:
---  - Uses native Lua mode, no DSL.
---  - Prioritizes CPU efficiency, GC avoidance, and correct facing handling.
---  - Designed for Apep v1.1+ (WoW 3.3.5 client).
 --------------------------------------------------------------------------------
-
 local gentleMedia, _A, gentle = ...
 local apepDir = _A.GetApepDirectory()
 _A.require(apepDir .. "\\GentleRotations\\Modules\\GentleLoot.lua")
 
---------------------------------------------------------------------------------
--- ⚙️ Constants and Cache
---------------------------------------------------------------------------------
+-- Cache static values (avoid repeat _A.* calls)
 local playerGUID = _A.Cache.Utils.playerGUID or _A.UnitGUID("player")
 
--- Spell IDs are resolved once for efficiency.
--- _A.GetSpellInfo() returns the localized spell name (string) for casting.
+-- Spell constants (resolved once)
 local spellLib = {
     SinisterStrike = _A.GetSpellInfo(1101752),
     Eviscerate     = _A.GetSpellInfo(1102098),
     Throw          = _A.GetSpellInfo(2764),
 }
 
--- Minimal GUI stub for later use
-local gui = {}
+local gui = {
+    { type = "checkbox", text = "Enable Auto Loot", key = "auto_loot", default = true },
+}
 
 --------------------------------------------------------------------------------
--- 🧠 Lifecycle Functions
+-- Lifecycle
 --------------------------------------------------------------------------------
-
 local function exeOnLoad()
-    -- Disable error sounds & messages (optional QoL)
     if _A.UIErrorsFrame then _A.UIErrorsFrame:Hide() end
     _A.Sound_EnableErrorSpeech = 0
-
-    -- Initialize loot listener
     gentle.addLootListener()
 end
 
 local function exeOnUnload()
-    -- Clean listener
     gentle.deleteLootListener()
 end
 
 --------------------------------------------------------------------------------
--- ⚔️ Combat Loop (Main Rotation)
---------------------------------------------------------------------------------
--- This function executes on every frame while in combat.
--- Complexity: O(1) per iteration (no nested loops or OM queries).
+-- Combat loop
+-- Avoids allocations, table walks, and excessive unit calls.
 --------------------------------------------------------------------------------
 local function inCombat()
-    -- Get the player object once per tick
     local player = _A.Object("player")
     if not player then return true end
+    if player:IscastingAnySpell() or player:Mounted() or player:State("stun || silence") then return true end
 
-    -- Early exit: casting, mounted, or CCed (stun/silence)
-    if player:IscastingAnySpell()
-        or player:Mounted()
-        or player:State("stun || silence") then
-        return true
-    end
-
-    -- Get target object and ensure it’s a valid enemy
     local target = _A.Object("target")
-    if not target or not target:Alive() or target:Friend() then
-        return true
-    end
+    if not target then return true end
 
-    -- Cache GUIDs for facing checks (avoids multiple table lookups)
     local targetGUID = target.guid
 
-    -- Ensure target is within facing cone (130° for melee)
-    local facing = _A.UnitIsFacing(playerGUID, targetGUID, 130)
-    if not facing then return true end
+    if target:Dead() or target:Friend() then return true end
 
-    -- Retrieve combo points (cheap accessor)
+    -- Melee facing (fastest valid check)
+    if not _A.UnitIsFacing(playerGUID, targetGUID, 130) then return true end
+
     local combo = player:Combo()
 
-    -- === COMBO BUILDERS ===
+    -- Builder
     if combo < 5
         and player:SpellReady(spellLib.SinisterStrike)
         and target:SpellRange(spellLib.SinisterStrike) then
         return target:Cast(spellLib.SinisterStrike)
     end
 
-    -- === FINISHERS ===
+    -- Finisher
     if combo == 5
         and player:SpellReady(spellLib.Eviscerate)
         and target:SpellRange(spellLib.Eviscerate) then
         return target:Cast(spellLib.Eviscerate)
     end
 
-    -- === FALLBACK ===
-    -- Optional: ranged pull if no melee range or combo
+    -- Optional ranged pull
     if player:SpellReady(spellLib.Throw)
-        and not target:SpellRange(spellLib.SinisterStrike)
-        and target:SpellRange(spellLib.Throw) then
+        and not target:SpellRange(spellLib.SinisterStrike) then
         return target:Cast(spellLib.Throw)
     end
 end
 
 --------------------------------------------------------------------------------
--- 🪣 Out-of-Combat Loop
---------------------------------------------------------------------------------
--- Handles autolooting and other non-combat tasks.
+-- Out-of-combat loop
 --------------------------------------------------------------------------------
 local function outCombat()
     local player = _A.Object("player")
     if not player then return true end
-
-    -- Safe auto-loot call (non-blocking)
-    gentle.autoLoot()
+    if _A.UI("auto_loot") then gentle.autoLoot() end
 end
 
 --------------------------------------------------------------------------------
--- 🧩 Register Combat Routine
+-- Routine registration
 --------------------------------------------------------------------------------
 _A.CR:Add("Rogue", {
-    name = "GentleRogue - Leveling (Optimized)",
+    name = "GentleRogue - Leveling (Final Optimized)",
     ic = inCombat,
     ooc = outCombat,
     use_lua_engine = true,
