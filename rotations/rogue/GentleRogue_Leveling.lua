@@ -81,14 +81,14 @@ end
 local function outCombat()
     local player = _A.Object("player")
     if not player then return true end
-    if _A.UI("auto_loot") then gentle.autoLoot() end
+    if player:Ui("auto_loot") then gentle.autoLoot() end
 end
 
 --------------------------------------------------------------------------------
 -- Routine registration
 --------------------------------------------------------------------------------
 _A.CR:Add("Rogue", {
-    name = "GentleRogue - Leveling (Final Optimized)",
+    name = "GentleRogue - Leveling",
     ic = inCombat,
     ooc = outCombat,
     use_lua_engine = true,
