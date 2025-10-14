@@ -49,27 +49,19 @@ local gui = {
 -- Plugin GUI registration removed to avoid duplicate menus
 -- Settings are accessible via Combat Routines Settings panel only
 
--- Read UI values directly from player:ui (no Interface:Fetch)
-local function UiGet(key, default)
-    if not (_A and _A.Object and type(_A.Object) == "function") then return default end
-    local pl = _A.Object("player")
-    if not (pl and type(pl.ui) == "function") then return default end
-    -- spinner suffix first
-    local ok_spin, v_spin = pcall(pl.ui, pl, key .. "_spin")
-    if ok_spin and v_spin ~= nil then return v_spin end
-    -- checkbox suffix
-    local ok_check, v_check = pcall(pl.ui, pl, key .. "_check")
-    if ok_check and v_check ~= nil then return v_check end
-    -- exact key
-    local ok_exact, v_exact = pcall(pl.ui, pl, key)
-    if ok_exact and v_exact ~= nil then return v_exact end
-    return default
-end
+-- No wrapper: use native player:ui to read settings directly
 
 local function GetPreferredAura()
-    local sel = UiGet("aura_type", "devotion")
-    -- Debug: show raw aura variables
-    -- (useful to detect nil/failed GetSpellInfo)
+    -- Read selection directly from player UI
+    local sel = "devotion"
+    do
+        local pl = _A.Object and _A.Object("player") or nil
+        if pl and type(pl.ui) == "function" then
+            local ok, v = pcall(pl.ui, pl, "aura_type")
+            if ok and v ~= nil then sel = v end
+        end
+    end
+    -- Pick aura by selection; fall back to Devotion if Retribution missing
     if sel == "retribution" then
         if not retributionAura or type(retributionAura) ~= "string" then
             print("[GentlePally] Warning: retributionAura not available (GetSpellInfo failed?). Falling back to Devotion.")
@@ -113,9 +105,7 @@ local function inCombat()
 
     -- check if we can cast the preferred Aura
     do
-    local sel = UiGet("aura_type", "devotion")
         local aura = GetPreferredAura()
-        -- Debug: show selected config and chosen aura
         if aura and player:SpellReady(aura) and not player:Buff(aura) then
             return player:Cast(aura)
         end
@@ -157,10 +147,38 @@ local function inCombat()
 
     -- AoE: Consecration when multiple enemies are nearby (fall back to target for single-target)
     do
-    local aoe_enabled = UiGet("aoe_enabled", true)
-    local threshold = UiGet("aoe_threshold", 2)
-    local mana_req = UiGet("consecration_mana", 50)
-    local delay_req = UiGet("consecration_delay", 0.25)
+        -- Read native UI values directly
+        local aoe_enabled = true
+        local threshold = 2
+        local mana_req = 50
+        local delay_req = 0.25
+        do
+            local pl = _A.Object and _A.Object("player") or nil
+            if pl and type(pl.ui) == "function" then
+                -- checkbox: try exact key then _check
+                local okAe, vAe = pcall(pl.ui, pl, "aoe_enabled")
+                if okAe and vAe ~= nil then aoe_enabled = vAe else
+                    local okAe2, vAe2 = pcall(pl.ui, pl, "aoe_enabled_check")
+                    if okAe2 and vAe2 ~= nil then aoe_enabled = vAe2 end
+                end
+                -- spinner: try _spin then exact key
+                local okThS, vThS = pcall(pl.ui, pl, "aoe_threshold_spin")
+                if okThS and vThS ~= nil then threshold = vThS else
+                    local okTh, vTh = pcall(pl.ui, pl, "aoe_threshold")
+                    if okTh and vTh ~= nil then threshold = vTh end
+                end
+                local okManaS, vManaS = pcall(pl.ui, pl, "consecration_mana_spin")
+                if okManaS and vManaS ~= nil then mana_req = vManaS else
+                    local okMana, vMana = pcall(pl.ui, pl, "consecration_mana")
+                    if okMana and vMana ~= nil then mana_req = vMana end
+                end
+                local okDelayS, vDelayS = pcall(pl.ui, pl, "consecration_delay_spin")
+                if okDelayS and vDelayS ~= nil then delay_req = vDelayS else
+                    local okDelay, vDelay = pcall(pl.ui, pl, "consecration_delay")
+                    if okDelay and vDelay ~= nil then delay_req = vDelay end
+                end
+            end
+        end
 
         if aoe_enabled and player:SpellReady(consecration) and not player:Moving() and player:Mana() >= mana_req then
             local enemies = _A.OM:Get("EnemyCombat")
