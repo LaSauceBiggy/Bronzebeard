@@ -1,25 +1,28 @@
 local nakamaMedia, _A, nakama = ...
 local player, target, roster, enemies
 
--- fetch spell names and store them in locals for performance optimization
--- offensive
-local crusaderStrike = _A.GetSpellInfo(1135395)
-local judgmentOfLight = _A.GetSpellInfo(1120271)
--- aura
-local devotionAura = _A.GetSpellInfo(1100465)
--- heal / bubble
-local holyLight = _A.GetSpellInfo(1100635)
-local divineProtection = _A.GetSpellInfo(1100498)
--- buff
-local blessingOfMight = _A.GetSpellInfo(1119740)
--- seals
-local sealOfRighteousness = _A.GetSpellInfo(1121084)
--- utility
-local hammerOfJustice = _A.GetSpellInfo(1100853)
-local purify = _A.GetSpellInfo(1101152)
--- generic
-local drink = _A.GetSpellInfo(430)
-local eat = _A.GetSpellInfo(433)
+local spellLib = {
+    -- fetch spell names and store them in locals for performance optimization
+    -- offensive
+    crusaderStrike = _A.GetSpellInfo(1135395),
+    judgmentOfLight = _A.GetSpellInfo(1120271),
+    -- aura
+    devotionAura = _A.GetSpellInfo(1100465),
+    -- heal / bubble
+    holyLight = _A.GetSpellInfo(1100635),
+    divineProtection = _A.GetSpellInfo(1100498),
+    -- buff
+    blessingOfMight = _A.GetSpellInfo(1119740),
+    -- seals
+    sealOfRighteousness = _A.GetSpellInfo(1121084),
+    -- utility
+    hammerOfJustice = _A.GetSpellInfo(1100853),
+    purify = _A.GetSpellInfo(1101152),
+    -- generic
+    drink = _A.GetSpellInfo(430),
+    eat = _A.GetSpellInfo(433)
+}
+
 
 -- to do: gui settings and modifiers
 local gui = {}
@@ -52,50 +55,50 @@ local function inCombat()
     end
 
     -- check if we can cast Devotion Aura
-    if player:SpellReady(devotionAura)
+    if player:SpellReady(spellLib.devotionAura)
         -- cancel if we have buff already
-        and not player:Buff(devotionAura) then
+        and not player:Buff(spellLib.devotionAura) then
         -- cast Devotion Aura
-        return player:Cast(devotionAura)
+        return player:Cast(spellLib.devotionAura)
     end
 
     -- check if we can cast Divine Protection
-    if player:SpellReady(divineProtection)
+    if player:SpellReady(spellLib.divineProtection)
         -- cancel if hp % > 20
         and player:Health() < 21 then
         -- cast Holy Light on player
-        return player:Cast(divineProtection)
+        return player:Cast(spellLib.divineProtection)
     end
 
     -- check if we can cast Holy Light
-    if player:SpellReady(holyLight)
+    if player:SpellReady(spellLib.holyLight)
         -- cancel if moving
         and not player:Moving()
         -- cancel if hp % > 40
         and player:Health() < 40 then
         -- cast Holy Light on player
-        return player:Cast(holyLight)
+        return player:Cast(spellLib.holyLight)
     end
 
     -- check if we can cast Seal of Righteousness
-    if player:SpellReady(sealOfRighteousness)
+    if player:SpellReady(spellLib.sealOfRighteousness)
         -- cancel if we have buff already
-        and not player:Buff(sealOfRighteousness) then
+        and not player:Buff(spellLib.sealOfRighteousness) then
         -- cast Seal of Righteousness on player
-        return player:Cast(sealOfRighteousness)
+        return player:Cast(spellLib.sealOfRighteousness)
     end
 
     -- check if we can and need to cast purify
     if player:DebuffType("Poison || Disease")
-        and player:SpellReady(purify)
+        and player:SpellReady(spellLib.purify)
         and player:Mana() > 75
-        and player:LastcastSeen(purify) > 5 then
-        return player:Cast(purify)
+        and player:LastcastSeen(spellLib.purify) > 5 then
+        return player:Cast(spellLib.purify)
     end
 
-        -- improved Hammer of Justice
+    -- improved Hammer of Justice
     -- now takes all possible targets into consideration
-    if player:SpellReady(hammerOfJustice) then
+    if player:SpellReady(spellLib.hammerOfJustice) then
         enemies = _A.OM:Get("EnemyCombat")
 
         for _, enemy in pairs(enemies) do
@@ -105,16 +108,16 @@ local function inCombat()
                 if not ischanneled then
                     if target:CastingPercent() >= 60
                         and total >= 0.275
-                        and enemy:SpellRange(hammerOfJustice) then
-                        return enemy:Cast(hammerOfJustice)
+                        and enemy:SpellRange(spellLib.hammerOfJustice) then
+                        return enemy:Cast(spellLib.hammerOfJustice)
                     end
                 end
 
                 if ischanneled then
                     if enemy:ChannelingPercent() >= 15
                         and total >= 0.575
-                        and enemy:SpellRange(hammerOfJustice) then
-                        return enemy:Cast(hammerOfJustice)
+                        and enemy:SpellRange(spellLib.hammerOfJustice) then
+                        return enemy:Cast(spellLib.hammerOfJustice)
                     end
                 end
             end
@@ -123,28 +126,30 @@ local function inCombat()
 
 
     -- check if we have a target thats not dead or a friend
-    if target and not (target:Dead() or target:Friend()) then
-        -- check if we can cast Judgement of Light
-        if player:SpellReady(judgmentOfLight)
-            -- cancel if target not in range
-            and target:SpellRange(judgmentOfLight)
-            -- cancel if target not in los
-            and target:Los() then
-            -- cast Judgement of Light on target
-            return target:Cast(judgmentOfLight) and player:timeout(judgmentOfLight, 0.25)
-        end
+    if not target or (target:Dead() or target:Friend()) then return true end
 
-        -- check if we can cast Crusader Strike
-        if player:SpellReady(crusaderStrike)
-            -- cancel if target not in range
-            and target:SpellRange(crusaderStrike)
-            -- cancel if target not in 130° cone in front
-            and _A.UnitIsFacing(player.guid, target.guid, 130) then
-            -- cast Crusader Strike on target
-            return target:Cast(crusaderStrike) and player:timeout(crusaderStrike, 0.25)
-        end
+    -- check if we can cast Judgement of Light
+    if player:SpellReady(judgmentOfLight)
+        -- cancel if target not in range
+        and target:SpellRange(judgmentOfLight)
+        -- cancel if target not in los
+        and target:Los() then
+        -- cast Judgement of Light on target
+        return target:Cast(judgmentOfLight) and player:timeout(judgmentOfLight, 0.25)
+    end
+
+    -- cancel if not facing!
+    if not _A.UnitIsFacing(player.guid, target.guid, 130) then return true end
+
+    -- check if we can cast Crusader Strike
+    if player:SpellReady(crusaderStrike)
+        -- cancel if target not in range
+        and target:SpellRange(crusaderStrike) then
+        -- cast Crusader Strike on target
+        return target:Cast(crusaderStrike) and player:timeout(crusaderStrike, 0.25)
     end
 end
+
 
 local function outCombat()
     player = _A.Object("player")
@@ -223,7 +228,7 @@ local function outCombat()
                     -- cancel if not los
                     and mate:Los() then
                     -- cast Blessing of Might on mate
-                    return mate:Cast(blessingOfMight)
+                    return mate:Cast(blessingOfMight) and player:timeout(blessingOfMight, 1.75)
                 end
             end
         else
