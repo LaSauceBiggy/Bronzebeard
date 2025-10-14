@@ -49,36 +49,25 @@ local gui = {
 -- Plugin GUI registration removed to avoid duplicate menus
 -- Settings are accessible via Combat Routines Settings panel only
 
--- Helper: return the preferred aura spell name from interface settings
--- Helper to fetch config: try player:ui FIRST (updated values), then Interface:Fetch fallback
-local function FetchConfig(key, default)
-    -- PRIORITY 1: check player UI storage (most up-to-date values from GUI spinners/checkboxes)
-    if _A and _A.Object and type(_A.Object) == "function" then
-        local player = _A.Object("player")
-        if player and type(player.ui) == "function" then
-            -- try with _spin suffix first (for spinner controls like aoe_threshold_spin)
-            local ok_spin, v_spin = pcall(player.ui, player, key .. "_spin")
-            if ok_spin and v_spin ~= nil then return v_spin end
-            -- try with _check suffix (for checkbox controls)
-            local ok_check, v_check = pcall(player.ui, player, key .. "_check")
-            if ok_check and v_check ~= nil then return v_check end
-            -- try exact key
-            local ok_exact, v_exact = pcall(player.ui, player, key)
-            if ok_exact and v_exact ~= nil then return v_exact end
-        end
-    end
-
-    -- PRIORITY 2: fallback to Interface:Fetch (may contain stale/default values)
-    if _A and _A.Interface and type(_A.Interface.Fetch) == "function" then
-        local ok, val = pcall(_A.Interface.Fetch, _A.Interface, gui.key, key, nil)
-        if ok and val ~= nil then return val end
-    end
-
+-- Read UI values directly from player:ui (no Interface:Fetch)
+local function UiGet(key, default)
+    if not (_A and _A.Object and type(_A.Object) == "function") then return default end
+    local pl = _A.Object("player")
+    if not (pl and type(pl.ui) == "function") then return default end
+    -- spinner suffix first
+    local ok_spin, v_spin = pcall(pl.ui, pl, key .. "_spin")
+    if ok_spin and v_spin ~= nil then return v_spin end
+    -- checkbox suffix
+    local ok_check, v_check = pcall(pl.ui, pl, key .. "_check")
+    if ok_check and v_check ~= nil then return v_check end
+    -- exact key
+    local ok_exact, v_exact = pcall(pl.ui, pl, key)
+    if ok_exact and v_exact ~= nil then return v_exact end
     return default
 end
 
 local function GetPreferredAura()
-    local sel = FetchConfig("aura_type", "devotion")
+    local sel = UiGet("aura_type", "devotion")
     -- Debug: show raw aura variables
     -- (useful to detect nil/failed GetSpellInfo)
     if sel == "retribution" then
@@ -98,21 +87,6 @@ end
 local function exeOnLoad()
     _A.UIErrorsFrame:Hide()
     _A.Sound_EnableErrorSpeech = 0
-    -- Sync config to player:ui for menus that read player:ui
-    if _A and _A.Interface and type(_A.Interface.Fetch) == "function" and _A.Object then
-        local player = _A.Object("player")
-        if player and type(player.ui) == "function" then
-            -- aura_type
-            local ok, val = pcall(_A.Interface.Fetch, _A.Interface, gui.key, "aura_type", nil)
-            if ok and val ~= nil then pcall(player.ui, player, "aura_type", val) end
-            -- aoe_enabled
-            local ok2, val2 = pcall(_A.Interface.Fetch, _A.Interface, gui.key, "aoe_enabled", nil)
-            if ok2 and val2 ~= nil then pcall(player.ui, player, "aoe_enabled", val2) end
-            -- aoe_threshold
-            local ok3, val3 = pcall(_A.Interface.Fetch, _A.Interface, gui.key, "aoe_threshold", nil)
-            if ok3 and val3 ~= nil then pcall(player.ui, player, "aoe_threshold_spin", val3) end
-        end
-    end
 end
 
 local function exeOnUnload() end
@@ -139,7 +113,7 @@ local function inCombat()
 
     -- check if we can cast the preferred Aura
     do
-        local sel = FetchConfig("aura_type", "devotion")
+    local sel = UiGet("aura_type", "devotion")
         local aura = GetPreferredAura()
         -- Debug: show selected config and chosen aura
         if aura and player:SpellReady(aura) and not player:Buff(aura) then
@@ -183,10 +157,10 @@ local function inCombat()
 
     -- AoE: Consecration when multiple enemies are nearby (fall back to target for single-target)
     do
-        local aoe_enabled = FetchConfig("aoe_enabled", true)
-        local threshold = FetchConfig("aoe_threshold", 2)
-        local mana_req = FetchConfig("consecration_mana", 50)
-        local delay_req = FetchConfig("consecration_delay", 0.25)
+    local aoe_enabled = UiGet("aoe_enabled", true)
+    local threshold = UiGet("aoe_threshold", 2)
+    local mana_req = UiGet("consecration_mana", 50)
+    local delay_req = UiGet("consecration_delay", 0.25)
 
         if aoe_enabled and player:SpellReady(consecration) and not player:Moving() and player:Mana() >= mana_req then
             local enemies = _A.OM:Get("EnemyCombat")
