@@ -215,8 +215,9 @@ local function outCombat()
 
             -- for each mate in our roster
             for _, mate in pairs(roster) do
-                -- cancel if mate has any Blessing of Might buff
-                if not mate:BuffAny(blessingOfMight)
+                if mate:Isplayer()
+                    -- cancel if mate has any Blessing of Might buff
+                    and not mate:BuffAny(blessingOfMight)
                     -- cancel if not in spellrange
                     and mate:SpellRange(blessingOfMight)
                     -- cancel if not los
