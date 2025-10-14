@@ -93,7 +93,7 @@ local function inCombat()
         return player:Cast(purify)
     end
 
-        -- improved Hammer of Justice
+    -- improved Hammer of Justice
     -- now takes all possible targets into consideration
     if player:SpellReady(hammerOfJustice) then
         enemies = _A.OM:Get("EnemyCombat")
@@ -215,14 +215,15 @@ local function outCombat()
 
             -- for each mate in our roster
             for _, mate in pairs(roster) do
-                -- cancel if mate has any Blessing of Might buff
-                if not mate:BuffAny(blessingOfMight)
+                if mate:Isplayer()
+                    -- cancel if mate has any Blessing of Might buff
+                    and not mate:BuffAny(blessingOfMight)
                     -- cancel if not in spellrange
                     and mate:SpellRange(blessingOfMight)
                     -- cancel if not los
                     and mate:Los() then
                     -- cast Blessing of Might on mate
-                    return mate:Cast(blessingOfMight)
+                    return mate:Cast(blessingOfMight) and player:timeout(blessingOfMight, 1.75)
                 end
             end
         else
