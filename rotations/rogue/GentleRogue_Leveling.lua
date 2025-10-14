@@ -2,9 +2,9 @@
 -- GentleRogue - Leveling
 -- Author: Gentleman
 --------------------------------------------------------------------------------
-local gentleMedia, _A, gentle = ...
+local nakama, _A, nakama = ...
 local apepDir = _A.GetApepDirectory()
-_A.require(apepDir .. "\\GentleRotations\\Modules\\GentleLoot.lua")
+_A.require(apepDir .. "\\nakama\\modules\\nakamaLoot.lua")
 
 -- Cache static values (avoid repeat _A.* calls)
 local playerGUID = _A.Cache.Utils.playerGUID or _A.UnitGUID("player")
@@ -17,7 +17,7 @@ local spellLib = {
 }
 
 local gui = {
-    { type = "checkbox", text = "Enable Auto Loot", key = "auto_loot", default = true },
+    { type = "checkbox", cw = 10, ch = 10, text = "Enable Auto Loot", key = "auto_loot", default = true },
 }
 
 --------------------------------------------------------------------------------
@@ -26,11 +26,11 @@ local gui = {
 local function exeOnLoad()
     if _A.UIErrorsFrame then _A.UIErrorsFrame:Hide() end
     _A.Sound_EnableErrorSpeech = 0
-    gentle.addLootListener()
+    nakama.addLootListener()
 end
 
 local function exeOnUnload()
-    gentle.deleteLootListener()
+    nakama.deleteLootListener()
 end
 
 --------------------------------------------------------------------------------
@@ -81,7 +81,7 @@ end
 local function outCombat()
     local player = _A.Object("player")
     if not player then return true end
-    if player:Ui("auto_loot") then gentle.autoLoot() end
+    if player:Ui("auto_loot") then nakama.autoLoot() end
 end
 
 --------------------------------------------------------------------------------
