@@ -49,23 +49,23 @@ local function inCombat()
 
     if target:Dead() or target:Friend() then return true end
 
-    -- Melee facing (fastest valid check)
-    if not _A.UnitIsFacing(playerGUID, targetGUID, 130) then return true end
-
     local combo = player:Combo()
 
-    -- Builder
-    if combo < 5
-        and player:SpellReady(spellLib.SinisterStrike)
-        and target:SpellRange(spellLib.SinisterStrike) then
-        return target:Cast(spellLib.SinisterStrike)
-    end
+    -- Melee facing (fastest valid check)
+    if _A.UnitIsFacing(playerGUID, targetGUID, 130) then
+        -- Builder
+        if combo < 5
+            and player:SpellReady(spellLib.SinisterStrike)
+            and target:SpellRange(spellLib.SinisterStrike) then
+            return target:Cast(spellLib.SinisterStrike)
+        end
 
-    -- Finisher
-    if combo == 5
-        and player:SpellReady(spellLib.Eviscerate)
-        and target:SpellRange(spellLib.Eviscerate) then
-        return target:Cast(spellLib.Eviscerate)
+        -- Finisher
+        if combo == 5
+            and player:SpellReady(spellLib.Eviscerate)
+            and target:SpellRange(spellLib.Eviscerate) then
+            return target:Cast(spellLib.Eviscerate)
+        end
     end
 
     -- Optional ranged pull
