@@ -69,12 +69,14 @@ local function inCombat()
     end
 
     -- Optional ranged pull
-    if player:SpellReady(spellLib.Throw)
-        and not target:SpellRange(spellLib.SinisterStrike)
-        and target:SpellRange(spellLib.Throw)
-        and target:Infront()
-        and target:Los() then
-        return target:Cast(spellLib.Throw)
+    if player:SpellReady(spellLib.Throw) then
+        local tarRange = target:Range(2)
+        if tarRange > 7
+            and tarRange < 30
+            and target:Infront()
+            and target:Los() then
+            return target:Cast(spellLib.Throw)
+        end
     end
 end
 
