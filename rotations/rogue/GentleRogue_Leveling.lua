@@ -53,17 +53,18 @@ local function inCombat()
 
     -- Melee facing (fastest valid check)
     if _A.UnitIsFacing(playerGUID, targetGUID, 130) then
+        local melee = target:SpellRange(spellLib.SinisterStrike)
         -- Builder
         if player:SpellReady(spellLib.SinisterStrike)
             and combo < 5
-            and target:SpellRange(spellLib.SinisterStrike) then
+            and melee then
             return target:Cast(spellLib.SinisterStrike)
         end
 
         -- Finisher
         if player:SpellReady(spellLib.Eviscerate)
             and (combo == 5 or (combo > 2 and target:Ttd() < 5))
-            and target:SpellRange(spellLib.Eviscerate) then
+            and melee then
             return target:Cast(spellLib.Eviscerate)
         end
     end
