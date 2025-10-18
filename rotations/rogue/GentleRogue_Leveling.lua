@@ -6,21 +6,50 @@
 --------------------------------------------------------------------------------
 local nakama, _A, nakama = ...
 local apepDir = _A.GetApepDirectory()
+_A.require(apepDir .. "\\nakama\\rogue\\spells.lua")
 _A.require(apepDir .. "\\nakama\\modules\\nakamaLoot.lua")
+_A.require(apepDir .. "\\nakama\\modules\\potions.lua")
+local spellLib = nakama.spellBook.Rogue
 
 -- Static data (resolved once)
 local playerGUID = _A.Cache.Utils.playerGUID or _A.UnitGUID("player")
 
-local spellLib = {
-    SinisterStrike = _A.GetSpellInfo(1101752),
-    SliceAndDice   = _A.GetSpellInfo(1105171),
-    Eviscerate     = _A.GetSpellInfo(1102098),
-    Evasion        = _A.GetSpellInfo(1105277),
-    Throw          = _A.GetSpellInfo(2764),
-}
-
 local gui = {
-    { type = "checkbox", cw = 10, ch = 10, text = "Enable Auto Loot", key = "auto_loot", default = true },
+    {
+        type = "section",
+        dummy = true,
+        contentHeight = 18
+    },
+    {
+        type = "spacer",
+        size = 1,
+    },
+    {
+        type = "header",
+        text = "GentleRogue - Leveling" .. "|r",
+        size = 16,
+        align = "CENTER"
+    },
+    {
+        type = "section",
+        size = 14,
+        text = "Potions",
+        align = "center",
+        contentHeight = 40,
+        expanded = false,
+        height = 20,
+    },
+    { type = "spacer" },
+    {
+        type = "section",
+        size = 14,
+        text = "QOL",
+        align = "center",
+        contentHeight = 40,
+        expanded = false,
+        height = 20,
+    },
+
 }
 
 --------------------------------------------------------------------------------
@@ -36,59 +65,51 @@ local function exeOnUnload()
     nakama.deleteLootListener()
 end
 
---------------------------------------------------------------------------------
--- Combat rotation
--- Core logic ordered Light → Heavy but allows ranged fallback.
---------------------------------------------------------------------------------
-local function inCombat()
-    local player = _A.Object("player")
-    if not player then return true end
-    if player:IscastingAnySpell() or player:Mounted() or player:State("stun || silence") then
+local function pauseCast()
+    if player:IscastingAnySpell() then
         return true
     end
+end
 
-    -- Defensive checks: costly but critical, done once per tick
+local function pauseStateOrMounted()
+    if player:Mounted() or player:State("stun || silence") then
+        return true
+    end
+end
+
+local function defensives()
     if player:SpellReady(spellLib.Evasion) then
-        if player:Area_rangeCombatenemies(7) >= 3 or player:Health() < 20 then
+        if player:Health() < 20 and player:Area_rangeCombatenemies(7) > 0 then
             return player:Cast(spellLib.Evasion)
         end
     end
+end
 
-    -- Target validation (light check)
-    local target = _A.Object("target")
-    if not target or target:Dead() or target:Friend() then return true end
-
-    -- Cache all runtime data locally
-    local combo = player:Combo()
-    local targetGUID = target.guid
-
+local function sliceAndDice()
     if player:SpellReady(spellLib.SliceAndDice) then
-        if (not player:Buff(spellLib.SliceAndDice) or player:BuffRefreshable(spellLib.SliceAndDice)) and combo > 1 then
+        if player:Combo() > 1
+            and (not player:Buff(spellLib.SliceAndDice) or player:BuffRefreshable(spellLib.SliceAndDice)) then
             return target:Cast(spellLib.SliceAndDice)
         end
     end
+end
 
-    local melee = target:SpellRange(spellLib.SinisterStrike)
-    local facing = _A.UnitIsFacing(playerGUID, targetGUID, 130)
-
-    -- If in melee range and facing, execute builder/finisher logic
-    if melee and facing then
-        -- Builder: cheap → heavy
-        if combo < 5 and player:SpellReady(spellLib.SinisterStrike) then
-            return target:Cast(spellLib.SinisterStrike)
-        end
-
-        -- Finisher: evaluated only when combo threshold reached
-        if (combo == 5 or (combo > 2 and target:Ttd() < 5))
+local function main()
+    if target:SpellRange(spellLib.SinisterStrike) and _A.UnitIsFacing(player.guid, target.guid, 130) then
+        if (player:Combo() == 5 or (player:Combo() > 2 and target:Ttd() < 5))
             and player:SpellReady(spellLib.Eviscerate) then
             return target:Cast(spellLib.Eviscerate)
         end
-    end
 
-    -- Ranged fallback: only executes when melee unreachable or invalid
-    if player:SpellReady(spellLib.Throw) then
+        if player:Combo() < 5 and player:SpellReady(spellLib.SinisterStrike) then
+            return target:Cast(spellLib.SinisterStrike)
+        end
+    end
+end
+
+local function throw()
+    if target and player:SpellReady(spellLib.Throw) then
         local range = target:Range(2)
-        -- Range check is lightweight numeric comparison; LoS & Infront are mid-cost
         if range > 7 and range < 30 and target:Infront() and target:Los() then
             return target:Cast(spellLib.Throw)
         end
@@ -96,13 +117,52 @@ local function inCombat()
 end
 
 --------------------------------------------------------------------------------
+-- Combat rotation
+-- Core logic ordered Light → Heavy but allows ranged fallback.
+--------------------------------------------------------------------------------
+local function inCombat()
+    if not player then return true end
+
+    if pauseCast() then
+        return true
+    end
+
+    if pauseStateOrMounted() then
+        return true
+    end
+
+    if defensives() then
+        return true
+    end
+
+    if not target or target:Dead() or target:Friend() then return true end
+
+    if sliceAndDice() then
+        return true
+    end
+
+    if main() then
+        return true
+    end
+
+    if throw() then
+        return true
+    end
+end
+
+--------------------------------------------------------------------------------
 -- Out-of-combat loop (keeps overhead minimal)
 --------------------------------------------------------------------------------
 local function outCombat()
-    local player = _A.Object("player")
-    if player and player:Ui("auto_loot") then
-        nakama.autoLoot()
+    if not player then return true end
+
+    if player:Ui("auto_loot") and nakama.autoLoot() then
+        return true
     end
+
+    --[[     if nakama:useHealthPotion() then
+        return true
+    end ]]
 end
 
 --------------------------------------------------------------------------------
@@ -114,7 +174,7 @@ _A.CR:Add("Rogue", {
     ooc = outCombat,
     use_lua_engine = true,
     gui = gui,
-    gui_st = { title = "GentleRogue - Rotation Settings", color = "FFF468", width = "315", height = "370" },
+    gui_st = { title = "Settings", color = "FFF468", width = "200", height = "200" },
     wow_ver = "3.3.5",
     apep_ver = "1.1",
     load = exeOnLoad,
