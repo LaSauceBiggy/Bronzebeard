@@ -15,41 +15,90 @@ local spellLib = nakama.spellBook.Rogue
 local playerGUID = _A.Cache.Utils.playerGUID or _A.UnitGUID("player")
 
 local gui = {
+    -- dummy
     {
         type = "section",
         dummy = true,
         contentHeight = 18
     },
+    -- spacer (2)
     {
         type = "spacer",
-        size = 1,
+        size = 2,
     },
+    -- header
     {
         type = "header",
         text = "GentleRogue - Leveling" .. "|r",
-        size = 16,
+        size = 14,
         align = "CENTER"
     },
+    -- potion section
     {
         type = "section",
-        size = 14,
-        text = "Potions",
+        size = 12,
+        text = "Potions |r",
         align = "center",
         contentHeight = 40,
         expanded = false,
         height = 20,
     },
-    { type = "spacer" },
+    -- spacer (2)
+    {
+        type = "spacer",
+        size = 2,
+    },
+    -- checkbox | use HP potion
+    {
+        type = "checkbox",
+        size = 12,
+        y = -1,
+        text = "use " .. "|cffff0000HP " .. "|cffffffffpotions |r",
+        key = "_use_potions_health",
+        default = true
+    },
+    -- text | HP potion % threshold
+    {
+        type = "text",
+        text = "|cffff0000HP " .. "|cffffffff% threshold |r",
+        size = 12,
+        x = 15,
+    },
+    -- spinner | HP potion % threshold
+    {
+        type = "spinner",
+        key = "_use_potions_health_percent",
+        height = 10,
+        y = 12,
+        spin = 30,
+        step = 1,
+        shiftStep = 1,
+        min = 1,
+        max = 70
+    },
+    -- QOL section
     {
         type = "section",
-        size = 14,
-        text = "QOL",
+        size = 12,
+        text = "QOL |r",
         align = "center",
         contentHeight = 40,
         expanded = false,
         height = 20,
     },
-
+    -- spacer(2)
+    {
+        type = "spacer",
+        size = 2,
+    },
+    -- nakama loothelper
+    {
+        type = "checkbox",
+        size = 12,
+        text = "|cFFA0522Dnakama loothelper |r",
+        key = "_nakama_loothelper",
+        default = true
+    },
 }
 
 --------------------------------------------------------------------------------
@@ -156,13 +205,13 @@ end
 local function outCombat()
     if not player then return true end
 
-    if player:Ui("auto_loot") and nakama.autoLoot() then
+    if player:Ui("_nakama_loothelper") and nakama.autoLoot() then
         return true
     end
 
-    --[[     if nakama:useHealthPotion() then
+    if player:Health() < player:Ui("_use_potions_health_percent_spin") and nakama:useHealthPotion() then
         return true
-    end ]]
+    end
 end
 
 --------------------------------------------------------------------------------
